@@ -981,7 +981,7 @@ int lwm2m_send(lwm2m_context_t *contextP, uint16_t shortServerID, lwm2m_uri_t *u
 
 #endif
 
-#ifdef LWM2M_SERVER_MODE
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE)
 
 typedef struct
 {

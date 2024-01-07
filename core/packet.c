@@ -194,7 +194,7 @@ static uint8_t handle_request(lwm2m_context_t * contextP,
 #endif
 #endif
 
-#ifdef LWM2M_SERVER_MODE
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE)
     case LWM2M_REQUEST_TYPE_REGISTRATION:
         result = registration_handleRequest(contextP, &uri, fromSessionH, message, response);
         break;

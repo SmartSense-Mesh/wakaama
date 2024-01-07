@@ -927,6 +927,147 @@ void print_usage(void)
     fprintf(stdout, "\r\n");
 }
 
+static const char * prv_dump_version(lwm2m_version_t version)
+{
+    switch(version)
+    {
+    case VERSION_MISSING:
+        return "Missing";
+    case VERSION_UNRECOGNIZED:
+        return "Unrecognized";
+    case VERSION_1_0:
+        return "1.0";
+    case VERSION_1_1:
+        return "1.1";
+    default:
+        return "";
+    }
+}
+
+static void prv_dump_binding(lwm2m_binding_t binding)
+{
+    if(BINDING_UNKNOWN == binding)
+    {
+        fprintf(stdout, "\tbinding: \"Not specified\"\r\n");
+    }
+    else
+    {
+        const struct bindingTable
+        {
+            lwm2m_binding_t binding;
+            const char *text;
+        } bindingTable[] =
+            {
+                { BINDING_U, "UDP" },
+                { BINDING_T, "TCP" },
+                { BINDING_S, "SMS" },
+                { BINDING_N, "Non-IP" },
+                { BINDING_Q, "queue mode" },
+            };
+        size_t i;
+        bool oneSeen = false;
+        fprintf(stdout, "\tbinding: \"");
+        for (i = 0; i < sizeof(bindingTable) / sizeof(bindingTable[0]); i++)
+        {
+            if ((binding & bindingTable[i].binding) != 0)
+            {
+                if (oneSeen)
+                {
+                    fprintf(stdout, ", %s", bindingTable[i].text);
+                }
+                else
+                {
+                    fprintf(stdout, "%s", bindingTable[i].text);
+                    oneSeen = true;
+                }
+            }
+        }
+        fprintf(stdout, "\"\r\n");
+    }
+}
+
+static void prv_dump_client(lwm2m_client_t * targetP)
+{
+    lwm2m_client_object_t * objectP;
+
+    fprintf(stdout, "Client #%d:\r\n", targetP->internalID);
+    fprintf(stdout, "\tname: \"%s\"\r\n", targetP->name);
+    fprintf(stdout, "\tversion: \"%s\"\r\n", prv_dump_version(targetP->version));
+    prv_dump_binding(targetP->binding);
+    if (targetP->msisdn) fprintf(stdout, "\tmsisdn: \"%s\"\r\n", targetP->msisdn);
+    if (targetP->altPath) fprintf(stdout, "\talternative path: \"%s\"\r\n", targetP->altPath);
+    fprintf(stdout, "\tlifetime: %d sec\r\n", targetP->lifetime);
+    fprintf(stdout, "\tobjects: ");
+    for (objectP = targetP->objectList; objectP != NULL ; objectP = objectP->next)
+    {
+        if (objectP->instanceList == NULL)
+        {
+            if (objectP->versionMajor != 0 || objectP->versionMinor != 0)
+            {
+                fprintf(stdout, "/%d (%u.%u), ", objectP->id, objectP->versionMajor, objectP->versionMinor);
+            }
+            else
+            {
+                fprintf(stdout, "/%d, ", objectP->id);
+            }
+        }
+        else
+        {
+            lwm2m_list_t * instanceP;
+
+            if (objectP->versionMajor != 0 || objectP->versionMinor != 0)
+            {
+                fprintf(stdout, "/%d (%u.%u), ", objectP->id, objectP->versionMajor, objectP->versionMinor);
+            }
+
+            for (instanceP = objectP->instanceList; instanceP != NULL ; instanceP = instanceP->next)
+            {
+                fprintf(stdout, "/%d/%d, ", objectP->id, instanceP->id);
+            }
+        }
+    }
+    fprintf(stdout, "\r\n");
+}
+
+static void prv_monitor_callback(lwm2m_context_t *lwm2mH, uint16_t clientID, lwm2m_uri_t *uriP, int status,
+                                 block_info_t *block_info, lwm2m_media_type_t format, uint8_t *data, size_t dataLength,
+                                 void *userData) {
+    lwm2m_client_t * targetP;
+
+    /* unused parameter */
+    (void)userData;
+
+    switch (status)
+    {
+    case COAP_201_CREATED:
+        fprintf(stdout, "\r\nNew client #%d registered.\r\n", clientID);
+
+        targetP = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2mH->clientList, clientID);
+
+        prv_dump_client(targetP);
+        break;
+
+    case COAP_202_DELETED:
+        fprintf(stdout, "\r\nClient #%d unregistered.\r\n", clientID);
+        break;
+
+    case COAP_204_CHANGED:
+        fprintf(stdout, "\r\nClient #%d updated.\r\n", clientID);
+
+        targetP = (lwm2m_client_t *)lwm2m_list_find((lwm2m_list_t *)lwm2mH->clientList, clientID);
+
+        prv_dump_client(targetP);
+        break;
+
+    default:
+        fprintf(stdout, "\r\nMonitor callback called with an unknown status: %d.\r\n", status);
+        break;
+    }
+
+    fprintf(stdout, "\r\n> ");
+    fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
     client_data_t data;
@@ -1294,6 +1435,9 @@ int main(int argc, char *argv[])
     /*
      * We now enter in a while loop that will handle the communications from the server
      */
+
+    lwm2m_set_monitoring_callback(lwm2mH, prv_monitor_callback, NULL);
+
     while (0 == g_quit)
     {
         struct timeval tv;
@@ -1458,7 +1602,14 @@ int main(int argc, char *argv[])
                     output_buffer(stderr, buffer, (size_t)numBytes, 0);
 
                     connP = connection_find(data.connList, &addr, addrLen);
-                    if (connP != NULL)
+                    if (connP == NULL) {
+                        connP = connection_new_incoming(data.connList, data.sock, (struct sockaddr *)&addr, addrLen);
+                        if (connP != NULL)
+                        {
+                            data.connList = connP;
+                        }
+                    }
+                    else if (connP != NULL)
                     {
                         /*
                          * Let liblwm2m respond to the query depending on the context

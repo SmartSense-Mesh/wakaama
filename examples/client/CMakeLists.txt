@@ -21,7 +21,7 @@ set(SOURCES
 
 # Client without DTLS support
 add_executable(lwm2mclient ${SOURCES})
-target_compile_definitions(lwm2mclient PRIVATE LWM2M_CLIENT_MODE LWM2M_BOOTSTRAP LWM2M_SUPPORT_SENML_JSON)
+target_compile_definitions(lwm2mclient PRIVATE LWM2M_VERSION_1_0 LWM2M_CLIENT_MODE LWM2M_BOOTSTRAP)
 target_sources_wakaama(lwm2mclient)
 target_sources_shared(lwm2mclient)
 

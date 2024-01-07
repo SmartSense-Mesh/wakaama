@@ -1181,7 +1181,7 @@ void registration_deregister(lwm2m_context_t * contextP,
 }
 #endif
 
-#ifdef LWM2M_SERVER_MODE
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE)
 static void prv_freeClientObjectList(lwm2m_client_object_t * objects)
 {
     while (objects != NULL)
@@ -1763,7 +1763,7 @@ static int prv_getLocationString(uint16_t id,
     return index + result;
 }
 
-uint8_t  registration_handleRequest(lwm2m_context_t * contextP,
+uint8_t registration_handleRequest(lwm2m_context_t * contextP,
                                    lwm2m_uri_t * uriP,
                                    void * fromSessionH,
                                    coap_packet_t * message,

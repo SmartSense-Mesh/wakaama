@@ -803,10 +803,10 @@ struct _lwm2m_context_
     lwm2m_object_t *     objectList;
     lwm2m_observed_t *   observedList;
 #endif
-#if defined(LWM2M_SERVER_MODE) || defined(LWM2M_BOOTSTRAP_SERVER_MODE)
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE) || defined(LWM2M_BOOTSTRAP_SERVER_MODE)
     lwm2m_client_t *        clientList;
 #endif
-#ifdef LWM2M_SERVER_MODE
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE)
     lwm2m_result_callback_t monitorCallback;
     void *                  monitorUserData;
 #endif
@@ -856,7 +856,7 @@ int lwm2m_send(lwm2m_context_t *contextP, uint16_t shortServerID, lwm2m_uri_t *u
 #endif
 #endif
 
-#ifdef LWM2M_SERVER_MODE
+#if defined(LWM2M_CLIENT_MODE) || defined(LWM2M_SERVER_MODE)
 // Clients registration/deregistration monitoring API.
 // When a LWM2M client registers, the callback is called with status COAP_201_CREATED.
 // When a LWM2M client deregisters, the callback is called with status COAP_202_DELETED.

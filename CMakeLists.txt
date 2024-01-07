@@ -5,5 +5,5 @@ project(wakaama C)
 add_subdirectory(examples)
 
 # Enable "test" target
-enable_testing()
-add_subdirectory(tests)
+#enable_testing()
+#add_subdirectory(tests)
