@@ -16,6 +16,7 @@ set(SOURCES
     object_security.c
     object_server.c
     object_test.c
+    object_client.c
     system_api.c
 )
 
