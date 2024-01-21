@@ -108,4 +108,13 @@ char * get_server_uri(lwm2m_object_t * objectP, uint16_t secObjInstID);
 void display_security_object(lwm2m_object_t * objectP);
 void copy_security_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSrc);
 
+/*
+ * object_client.c
+ */
+lwm2m_object_t * get_client_object(const char* serverUri);
+void clean_client_object(lwm2m_object_t * objectP);
+char * get_client_uri(lwm2m_object_t * objectP, uint16_t secObjInstID);
+void display_client_object(lwm2m_object_t * objectP);
+void copy_client_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSrc);
+
 #endif /* LWM2MCLIENT_H_ */

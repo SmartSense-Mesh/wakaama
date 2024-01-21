@@ -575,7 +575,7 @@ lwm2m_object_t * get_security_object(int serverId,
         targetP->instanceId = 0;
         targetP->uri = (char*)lwm2m_malloc(strlen(serverUri)+1); 
         strcpy(targetP->uri, serverUri);
-
+        printf("serverUri: %s\n", serverUri);
         targetP->securityMode = LWM2M_SECURITY_MODE_NONE;
         targetP->publicIdentity = NULL;
         targetP->publicIdLen = 0;

@@ -88,7 +88,7 @@
 int g_reboot = 0;
 static int g_quit = 0;
 
-#define OBJ_COUNT 9
+#define OBJ_COUNT 20
 lwm2m_object_t * objArray[OBJ_COUNT];
 
 // only backup security and server objects
@@ -1320,80 +1320,81 @@ int main(int argc, char *argv[])
 #else
     objArray[0] = get_security_object(serverId, serverUri, pskId, pskBuffer, pskLen, false);
 #endif
-    if (NULL == objArray[0])
+    int objCount = 0;
+    if (NULL == objArray[objCount])
     {
         fprintf(stderr, "Failed to create security object\r\n");
         return -1;
     }
-    data.securityObjP = objArray[0];
+    data.securityObjP = objArray[objCount++];
 
-    objArray[1] = get_server_object(serverId, "U", lifetime, false);
-    if (NULL == objArray[1])
+    objArray[objCount] = get_server_object(serverId, "U", lifetime, false);
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create server object\r\n");
         return -1;
     }
 
-    objArray[2] = get_object_device();
-    if (NULL == objArray[2])
+    objArray[objCount] = get_object_device();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create Device object\r\n");
         return -1;
     }
 
-    objArray[3] = get_object_firmware();
-    if (NULL == objArray[3])
+    objArray[objCount] = get_object_firmware();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create Firmware object\r\n");
         return -1;
     }
 
-    objArray[4] = get_object_location();
-    if (NULL == objArray[4])
+    objArray[objCount] = get_object_location();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create location object\r\n");
         return -1;
     }
 
-    objArray[5] = get_test_object();
-    if (NULL == objArray[5])
+    objArray[objCount] = get_test_object();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create test object\r\n");
         return -1;
     }
 
-    objArray[6] = get_object_conn_m();
-    if (NULL == objArray[6])
+    objArray[objCount] = get_object_conn_m();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create connectivity monitoring object\r\n");
         return -1;
     }
 
-    objArray[7] = get_object_conn_s();
-    if (NULL == objArray[7])
+    objArray[objCount] = get_object_conn_s();
+    if (NULL == objArray[objCount++])
     {
         fprintf(stderr, "Failed to create connectivity statistics object\r\n");
         return -1;
     }
 
     int instId = 0;
-    objArray[8] = acc_ctrl_create_object();
-    if (NULL == objArray[8])
+    objArray[objCount] = acc_ctrl_create_object();
+    if (NULL == objArray[objCount])
     {
         fprintf(stderr, "Failed to create Access Control object\r\n");
         return -1;
     }
-    else if (acc_ctrl_obj_add_inst(objArray[8], instId, 3, 0, serverId)==false)
+    else if (acc_ctrl_obj_add_inst(objArray[objCount], instId, 3, 0, serverId)==false)
     {
         fprintf(stderr, "Failed to create Access Control object instance\r\n");
         return -1;
     }
-    else if (acc_ctrl_oi_add_ac_val(objArray[8], instId, 0, 0xF /* == 0b000000000001111 */)==false)
+    else if (acc_ctrl_oi_add_ac_val(objArray[objCount], instId, 0, 0xF /* == 0b000000000001111 */)==false)
     {
         fprintf(stderr, "Failed to create Access Control ACL default resource\r\n");
         return -1;
     }
-    else if (acc_ctrl_oi_add_ac_val(objArray[8], instId, 999, 0x1 /* == 0b000000000000001 */)==false)
+    else if (acc_ctrl_oi_add_ac_val(objArray[objCount++], instId, 999, 0x1 /* == 0b000000000000001 */)==false)
     {
         fprintf(stderr, "Failed to create Access Control ACL resource for serverId: 999\r\n");
         return -1;
@@ -1621,6 +1622,19 @@ int main(int argc, char *argv[])
                              printf("error handling message %d\n",result);
                         }
 #else
+                        char *clientUri = malloc(sizeof(char) * 50);
+                        sprintf(clientUri, "coap://%s:%hu", s, ntohs(port));
+                        printf("clientUri: %s\n", clientUri);
+                        objArray[objCount] = get_client_object(clientUri);
+                        if (NULL == objArray[objCount])
+                        {
+                            fprintf(stderr, "Failed to create Client object\r\n");
+                            return -1;
+                        } else {
+                            lwm2mH->objectList = (lwm2m_object_t *)LWM2M_LIST_ADD(lwm2mH->objectList, objArray[objCount++]);
+                            printf("Client object created\n");
+                        }
+
                         lwm2m_handle_packet(lwm2mH, buffer, (size_t)numBytes, connP);
 #endif
                         conn_s_updateRxStatistic(objArray[7], numBytes, false);
@@ -1693,6 +1707,7 @@ int main(int argc, char *argv[])
     free_object_conn_m(objArray[6]);
     free_object_conn_s(objArray[7]);
     acl_ctrl_free_object(objArray[8]);
+
 
     return 0;
 }

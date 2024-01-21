@@ -224,13 +224,7 @@ void clean_client_object(lwm2m_object_t * objectP)
     }
 }
 
-lwm2m_object_t * get_client_object(int serverId,
-                                    const char* serverUri,
-                                    char * bsPskId,
-                                    char * psk,
-                                    uint16_t pskLen,
-                                    bool isBootstrap)
-{
+lwm2m_object_t * get_client_object(const char* serverUri) {
     lwm2m_object_t * clientObj;
 
     clientObj = (lwm2m_object_t *)lwm2m_malloc(sizeof(lwm2m_object_t));
@@ -241,7 +235,7 @@ lwm2m_object_t * get_client_object(int serverId,
 
         memset(clientObj, 0, sizeof(lwm2m_object_t));
 
-        clientObj->objID = 0;
+        clientObj->objID = 11001;
 
         // Manually create a hardcoded instance
         targetP = (client_instance_t *)lwm2m_malloc(sizeof(client_instance_t));
@@ -262,7 +256,6 @@ lwm2m_object_t * get_client_object(int serverId,
         clientObj->writeFunc = prv_client_write;
         clientObj->createFunc = prv_client_create;
         clientObj->deleteFunc = prv_client_delete;
-
     }
 
     return clientObj;
