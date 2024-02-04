@@ -897,6 +897,8 @@ static void prv_display_objects(lwm2m_context_t *lwm2mH, char *buffer, void *use
             case TEST_OBJECT_ID:
                 display_test_object(object);
                 break;
+            case LWM2M_CLIENT_OBJECT_ID:
+                display_client_object(object);
             default:
                 fprintf(stdout, "unknown object ID: %" PRIu16 "\n", object->objID);
                 break;
@@ -1603,15 +1605,7 @@ int main(int argc, char *argv[])
                     output_buffer(stderr, buffer, (size_t)numBytes, 0);
 
                     connP = connection_find(data.connList, &addr, addrLen);
-                    if (connP == NULL) {
-                        connP = connection_new_incoming(data.connList, data.sock, (struct sockaddr *)&addr, addrLen);
-                        if (connP != NULL)
-                        {
-                            data.connList = connP;
-                        }
-                    }
-                    else if (connP != NULL)
-                    {
+                    if (connP != NULL) {
                         /*
                          * Let liblwm2m respond to the query depending on the context
                          */
