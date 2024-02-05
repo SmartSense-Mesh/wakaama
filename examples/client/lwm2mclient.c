@@ -899,6 +899,7 @@ static void prv_display_objects(lwm2m_context_t *lwm2mH, char *buffer, void *use
                 break;
             case LWM2M_CLIENT_OBJECT_ID:
                 display_client_object(object);
+                break;
             default:
                 fprintf(stdout, "unknown object ID: %" PRIu16 "\n", object->objID);
                 break;
