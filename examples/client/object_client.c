@@ -224,34 +224,15 @@ void clean_client_object(lwm2m_object_t * objectP)
     }
 }
 
-lwm2m_object_t * get_client_object(const char* serverUri) {
+lwm2m_object_t * get_client_object(void) {
     lwm2m_object_t * clientObj;
 
     clientObj = (lwm2m_object_t *)lwm2m_malloc(sizeof(lwm2m_object_t));
 
-    if (NULL != clientObj)
-    {
-        client_instance_t * targetP;
-
+    if (NULL != clientObj) {
         memset(clientObj, 0, sizeof(lwm2m_object_t));
 
         clientObj->objID = 11001;
-
-        // Manually create a hardcoded instance
-        targetP = (client_instance_t *)lwm2m_malloc(sizeof(client_instance_t));
-        if (NULL == targetP)
-        {
-            lwm2m_free(clientObj);
-            return NULL;
-        }
-
-        memset(targetP, 0, sizeof(client_instance_t));
-        targetP->instanceId = 0;
-        targetP->uri = (char*)lwm2m_malloc(strlen(serverUri)+1);
-        strcpy(targetP->uri, serverUri);
-
-        clientObj->instanceList = LWM2M_LIST_ADD(clientObj->instanceList, targetP);
-
         clientObj->readFunc = prv_client_read;
         clientObj->writeFunc = prv_client_write;
         clientObj->createFunc = prv_client_create;
@@ -259,6 +240,25 @@ lwm2m_object_t * get_client_object(const char* serverUri) {
     }
 
     return clientObj;
+}
+
+void create_client_instance(lwm2m_object_t * clientObj, const char* serverUri) {
+    client_instance_t * targetP = (client_instance_t *)lwm2m_malloc(sizeof(client_instance_t));
+    static int instanceId = 0;
+    if (NULL == targetP)
+    {
+        printf("Couldn't create the instance\n");
+        lwm2m_free(clientObj);
+        return;
+    }
+
+    memset(targetP, 0, sizeof(client_instance_t));
+    targetP->instanceId = instanceId;
+    targetP->uri = (char*)lwm2m_malloc(strlen(serverUri)+1);
+    strcpy(targetP->uri, serverUri);
+
+    clientObj->instanceList = LWM2M_LIST_ADD(clientObj->instanceList, targetP);
+    instanceId += 1;
 }
 
 char * get_client_uri(lwm2m_object_t * objectP,
@@ -270,6 +270,18 @@ char * get_client_uri(lwm2m_object_t * objectP,
     {
         return lwm2m_strdup(targetP->uri);
     }
+
+    return NULL;
+}
+
+// Return the node with URI 'uri' from the list 'head' or NULL if not found
+lwm2m_list_t* find_by_uri(lwm2m_list_t * head, const char* uri) {
+    while (NULL != head && strncmp(((client_instance_t *) head)->uri, uri, strlen(uri)) != 0)
+    {
+        head = head->next;
+    }
+
+    if (NULL != head && strncmp(((client_instance_t *) head)->uri, uri, strlen(uri)) == 0) return head;
 
     return NULL;
 }

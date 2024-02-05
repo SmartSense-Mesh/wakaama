@@ -1401,6 +1401,13 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to create Access Control ACL resource for serverId: 999\r\n");
         return -1;
     }
+
+    objArray[objCount] = get_client_object();
+    if (NULL == objArray[objCount])
+    {
+        fprintf(stderr, "Failed to create Client object\r\n");
+        return -1;
+    }
     /*
      * The liblwm2m library is now initialized with the functions that will be in
      * charge of communication
@@ -1605,7 +1612,13 @@ int main(int argc, char *argv[])
                     output_buffer(stderr, buffer, (size_t)numBytes, 0);
 
                     connP = connection_find(data.connList, &addr, addrLen);
-                    if (connP != NULL) {
+                    if (connP == NULL) {
+                        connP = connection_new_incoming(data.connList, data.sock, (struct sockaddr *)&addr, addrLen);
+                        if (connP != NULL)
+                        {
+                            data.connList = connP;
+                        }
+                    } else if (connP != NULL) {
                         /*
                          * Let liblwm2m respond to the query depending on the context
                          */
@@ -1619,16 +1632,11 @@ int main(int argc, char *argv[])
                         char *clientUri = malloc(sizeof(char) * 50);
                         sprintf(clientUri, "coap://%s:%hu", s, ntohs(port));
                         printf("clientUri: %s\n", clientUri);
-                        objArray[objCount] = get_client_object(clientUri);
-                        if (NULL == objArray[objCount])
-                        {
-                            fprintf(stderr, "Failed to create Client object\r\n");
-                            return -1;
-                        } else {
-                            lwm2mH->objectList = (lwm2m_object_t *)LWM2M_LIST_ADD(lwm2mH->objectList, objArray[objCount++]);
-                            printf("Client object created\n");
-                        }
 
+                        if (find_by_uri(objArray[objCount]->instanceList, clientUri) == NULL) {
+                            create_client_instance(objArray[objCount], clientUri);
+                        }
+                        // TODO: error handling.
                         lwm2m_handle_packet(lwm2mH, buffer, (size_t)numBytes, connP);
 #endif
                         conn_s_updateRxStatistic(objArray[7], numBytes, false);

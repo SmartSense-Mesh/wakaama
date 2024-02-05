@@ -111,10 +111,11 @@ void copy_security_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSr
 /*
  * object_client.c
  */
-lwm2m_object_t * get_client_object(const char* serverUri);
+lwm2m_object_t * get_client_object(void);
+void create_client_instance(lwm2m_object_t * clientObj, const char* serverUri);
 void clean_client_object(lwm2m_object_t * objectP);
 char * get_client_uri(lwm2m_object_t * objectP, uint16_t secObjInstID);
 void display_client_object(lwm2m_object_t * objectP);
 void copy_client_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSrc);
-
+lwm2m_list_t* find_by_uri(lwm2m_list_t * head, const char* uri);
 #endif /* LWM2MCLIENT_H_ */
