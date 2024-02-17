@@ -118,4 +118,15 @@ char * get_client_uri(lwm2m_object_t * objectP, uint16_t secObjInstID);
 void display_client_object(lwm2m_object_t * objectP);
 void copy_client_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSrc);
 lwm2m_list_t* find_by_uri(lwm2m_list_t * head, const char* uri);
+
+/*
+ * object_ml_model.c
+ */
+lwm2m_object_t * get_ml_model_object(void);
+void create_ml_model_instance(lwm2m_object_t * clientObj, const char* serverUri, const char* model);
+void clean_ml_model_object(lwm2m_object_t * objectP);
+char * get_ml_model_uri(lwm2m_object_t * objectP, uint16_t secObjInstID);
+void display_ml_model_object(lwm2m_object_t * objectP);
+void copy_ml_model_object(lwm2m_object_t * objectDest, lwm2m_object_t * objectSrc);
+
 #endif /* LWM2MCLIENT_H_ */

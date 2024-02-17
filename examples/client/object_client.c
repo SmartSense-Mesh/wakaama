@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include "liblwm2m.h"
@@ -232,7 +231,7 @@ lwm2m_object_t * get_client_object(void) {
     if (NULL != clientObj) {
         memset(clientObj, 0, sizeof(lwm2m_object_t));
 
-        clientObj->objID = 11001;
+        clientObj->objID = LWM2M_CLIENT_OBJECT_ID;
         clientObj->readFunc = prv_client_read;
         clientObj->writeFunc = prv_client_write;
         clientObj->createFunc = prv_client_create;

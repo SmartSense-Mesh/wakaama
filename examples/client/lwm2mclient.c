@@ -637,6 +637,72 @@ syntax_error:
 }
 #endif
 
+#ifndef LWM2M_VERSION_1_0
+//static void prv_client_send(lwm2m_context_t *lwm2mH, char *buffer, void *user_data) {
+//    lwm2m_uri_t uri;
+//    lwm2m_uri_t *uris = NULL;
+//    size_t uriCount = 0;
+//    char *tmp;
+//    char *end = NULL;
+//    int result;
+//    uint16_t serverId;
+//
+//    /* unused parameter */
+//    (void)user_data;
+//
+//    if (buffer[0] == 0)
+//        goto syntax_error;
+//
+//    result = atoi(buffer);
+//    if (result < 0 || result > LWM2M_MAX_ID)
+//        goto syntax_error;
+//    serverId = (uint16_t)result;
+//
+//    tmp = buffer;
+//    do {
+//        tmp = get_next_arg(tmp, &end);
+//        if (tmp[0] == 0)
+//            goto syntax_error;
+//
+//        result = lwm2m_stringToUri(tmp, end - tmp, &uri);
+//        if (result == 0)
+//            goto syntax_error;
+//        uriCount++;
+//    } while (!check_end_of_args(end));
+//
+//    uris = lwm2m_malloc(uriCount * sizeof(lwm2m_uri_t));
+//    if (uris != NULL) {
+//        size_t i;
+//        for (i = 0; i < uriCount; i++) {
+//            buffer = get_next_arg(buffer, &end);
+//            if (buffer[0] == 0)
+//                goto syntax_error;
+//
+//            result = lwm2m_stringToUri(buffer, end - buffer, uris + i);
+//            if (result == 0)
+//                goto syntax_error;
+//        }
+//
+//        result = lwm2m_send(lwm2mH, serverId, uris, uriCount, NULL, NULL);
+//        lwm2m_free(uris);
+//    } else {
+//        result = COAP_500_INTERNAL_SERVER_ERROR;
+//    }
+//    if (result != 0) {
+//        fprintf(stdout, "Send error: ");
+//        print_status(stdout, result);
+//        fprintf(stdout, "\r\n");
+//    }
+//    return;
+//
+//syntax_error:
+//    if (uris != NULL) {
+//        lwm2m_free(uris);
+//    }
+//    fprintf(stdout, "Syntax error !\n");
+//}
+#endif
+
 static void update_battery_level(lwm2m_context_t * context)
 {
     static time_t next_change_time = 0;
@@ -900,6 +966,9 @@ static void prv_display_objects(lwm2m_context_t *lwm2mH, char *buffer, void *use
             case LWM2M_CLIENT_OBJECT_ID:
                 display_client_object(object);
                 break;
+            case LWM2M_ML_MODEL_OBJECT_ID:
+                display_ml_model_object(object);
+                break;
             default:
                 fprintf(stdout, "unknown object ID: %" PRIu16 "\n", object->objID);
                 break;
@@ -1071,6 +1140,16 @@ static void prv_monitor_callback(lwm2m_context_t *lwm2mH, uint16_t clientID, lwm
     fflush(stdout);
 }
 
+int get_linked_list_size(lwm2m_list_t * list) {
+    int size = 0;
+    while (list != NULL)
+    {
+        size++;
+        list = list->next;
+    }
+    return size;
+}
+
 int main(int argc, char *argv[])
 {
     client_data_t data;
@@ -1080,7 +1159,10 @@ int main(int argc, char *argv[])
     const char * server = NULL;
     const char * serverPort = LWM2M_STANDARD_PORT_STR;
     const char *name = "testlwm2mclient";
-    int lifetime = 300;
+    const char *model = "pretrained_resnet";
+    char *ip_current = malloc(sizeof(char) * INET_ADDRSTRLEN); // TODO: free
+    memset(ip_current, 0, INET_ADDRSTRLEN);
+    int lifetime = 60;
     int batterylevelchanging = 0;
     time_t reboot_time = 0;
     int opt;
@@ -1207,6 +1289,15 @@ int main(int argc, char *argv[])
             }
             name = argv[opt];
             break;
+        case 'm':
+            opt++;
+            if (opt >= argc)
+            {
+                print_usage();
+                return 0;
+            }
+            model = argv[opt];
+            break;
         case 'l':
             opt++;
             if (opt >= argc)
@@ -1269,6 +1360,19 @@ int main(int argc, char *argv[])
      */
     fprintf(stderr, "Trying to bind LWM2M Client to port %s\r\n", localPort);
     data.sock = create_socket(localPort, data.addressFamily);
+//    get_own_ip(data.sock, ip_current);
+    struct sockaddr_in o_addr;
+    socklen_t o_addrLen;
+    o_addrLen = sizeof(o_addr);
+
+    getsockname(data.sock, (struct sockaddr *)&o_addr, &o_addrLen);
+    inet_ntop(AF_INET, &o_addr.sin_addr, ip_current, sizeof(ip_current));
+    unsigned int o_port = ntohs(o_addr.sin_port);
+
+    char o_ip[99];
+    snprintf(o_ip, sizeof(o_ip), "coap://%s:%u", ip_current, o_port);
+    printf("MY OWN IP: %s\r\n", o_ip);
+
     if (data.sock < 0)
     {
         fprintf(stderr, "Failed to open socket: %d %s\r\n", errno, strerror(errno));
@@ -1403,6 +1507,16 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+//    int ml_model_inst = 0;
+    objArray[objCount] = get_ml_model_object();
+    if (NULL == objArray[objCount])
+    {
+        fprintf(stderr, "Failed to ML Model object\r\n");
+        return -1;
+    }
+
+    create_ml_model_instance(objArray[objCount++], o_ip, model);
+
     objArray[objCount] = get_client_object();
     if (NULL == objArray[objCount])
     {
@@ -1441,7 +1555,7 @@ int main(int argc, char *argv[])
      */
     init_value_change(lwm2mH);
 
-    fprintf(stdout, "LWM2M Client \"%s\" started on port %s\r\n", name, localPort);
+    fprintf(stdout, "LWM2M Client \"%s\" started on port %s with model: %s\r\n", name, localPort, model);
     fprintf(stdout, "> "); fflush(stdout);
     /*
      * We now enter in a while loop that will handle the communications from the server
@@ -1519,6 +1633,11 @@ int main(int argc, char *argv[])
             break;
         case STATE_READY:
             fprintf(stdout, "STATE_READY\r\n");
+            int num_clients = get_linked_list_size((lwm2m_list_t *) objArray[objCount]->instanceList);
+            // TODO:
+            if (num_clients > 0) {
+
+            }
             break;
         default:
             fprintf(stdout, "Unknown...\r\n");
@@ -1636,11 +1755,14 @@ int main(int argc, char *argv[])
 
                         if (find_by_uri(objArray[objCount]->instanceList, clientUri) == NULL) {
                             create_client_instance(objArray[objCount], clientUri);
+                            create_ml_model_instance(objArray[objCount-1], clientUri, "");
                         }
                         // TODO: error handling.
                         lwm2m_handle_packet(lwm2mH, buffer, (size_t)numBytes, connP);
+//                        lwm2m_send(lwm2mH, clientUri, buffer, (size_t)numBytes, LWM2M_CONTENT_TEXT, NULL);
 #endif
                         conn_s_updateRxStatistic(objArray[7], numBytes, false);
+
                     }
                     else
                     {

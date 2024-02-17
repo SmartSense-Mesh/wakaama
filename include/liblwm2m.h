@@ -197,6 +197,7 @@ bool lwm2m_session_is_equal(void * session1, void * session2, void * userData);
 #define LWM2M_CONN_STATS_OBJECT_ID          7
 #define LWM2M_OSCORE_OBJECT_ID             21
 #define LWM2M_CLIENT_OBJECT_ID          11001
+#define LWM2M_ML_MODEL_OBJECT_ID        34000
 
 /*
  * Resource IDs for the LWM2M Security Object
@@ -218,7 +219,13 @@ bool lwm2m_session_is_equal(void * session1, void * session2, void * userData);
 /*
  * Resource IDs for the LWM2M Client Object
  */
-#define LWM2M_CLIENT_URI_ID                      0
+#define LWM2M_CLIENT_URI_ID                   0
+
+/*
+ * Resource IDs for the LWM2M ML Model Object
+ */
+#define LWM2M_ML_MODEL_MODEL_ID               0
+#define LWM2M_ML_MODEL_URI_ID                 1
 
 /*
  * Resource IDs for the LWM2M Server Object
